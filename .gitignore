@@ -24,4 +24,4 @@ htmlcov/
 docker/data/
 
 # OS
-.DS_Store
+.DS_Storescratch_test.py
