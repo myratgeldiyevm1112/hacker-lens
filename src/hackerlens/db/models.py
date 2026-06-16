@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from reddit_lens.db.base import Base
+from hackerlens.db.base import Base
 
 
 class ItemType(str, enum.Enum):

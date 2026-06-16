@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "reddit-lens"
+name = "hackerlens"
 version = "0.1.0"
 description = "Reddit Intelligence Platform: scraping, NLP analytics and dashboard for Reddit data"
 authors = [

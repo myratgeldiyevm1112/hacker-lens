@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from reddit_lens.db.models import FeedType, ItemType
+from hackerlens.db.models import FeedType, ItemType
 
 
 class ItemCreate(BaseModel):

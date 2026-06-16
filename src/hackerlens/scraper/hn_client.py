@@ -8,7 +8,7 @@ from datetime import datetime
 
 import httpx
 
-from reddit_lens.core.config import settings
+from hackerlens.core.config import settings
 
 VALID_FEEDS = {"top", "new", "best", "ask", "show", "job"}
 

@@ -1,7 +1,7 @@
+name: hackerlens
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: hackerlens-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hackerlens_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackerlens_pass}
@@ -19,7 +19,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: hackerlens-redis
     ports:
       - "6379:6379"
     volumes:

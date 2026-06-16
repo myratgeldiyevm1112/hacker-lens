@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from reddit_lens.core.config import settings
-from reddit_lens.db.base import Base
-from reddit_lens.db import models  # noqa: F401  (registers tables on Base.metadata)
+from hackerlens.core.config import settings
+from hackerlens.db.base import Base
+from hackerlens.db import models  # noqa: F401  (registers tables on Base.metadata)
 
 config = context.config
 
