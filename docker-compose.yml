@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hackerlens-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hackerlens_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackerlens_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-hackerlens_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - hackerlens-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hackerlens_user} -d ${POSTGRES_DB:-hackerlens_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: hackerlens-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - hackerlens-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  hackerlens-postgres-data:
+    name: hackerlens-postgres
+  hackerlens-redis-data:
+    name: hackerlens-redis
+
+networks:
+  default:
+    name: hackerlens-network

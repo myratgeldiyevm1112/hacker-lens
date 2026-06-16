@@ -24,5 +24,15 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
 
+    @property
+    def sync_database_url(self) -> str:
+        """
+        Alembic runs migrations synchronously, so it needs the
+        psycopg2 driver instead of the asyncpg one used by the app
+        at runtime. We derive it from the same DATABASE_URL so
+        there's only one source of truth for connection details.
+        """
+        return self.database_url.replace("postgresql+asyncpg", "postgresql+psycopg2")
+
 
 settings = Settings()
