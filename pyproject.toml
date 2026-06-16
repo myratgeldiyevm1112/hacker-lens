@@ -18,6 +18,8 @@ dependencies = [
     "alembic>=1.13",
     "psycopg2-binary>=2.9",
     "redis>=5.0",
+    "tenacity>=8.2",
+    "loguru>=0.7",
 ]
 [project.optional-dependencies]
 dev = [

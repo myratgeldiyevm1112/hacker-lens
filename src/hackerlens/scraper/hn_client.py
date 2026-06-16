@@ -10,6 +10,8 @@ import httpx
 
 from hackerlens.core.config import settings
 from hackerlens.scraper.rate_limiter import TokenBucketRateLimiter
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from hackerlens.core.logging import logger
 
 VALID_FEEDS = {"top", "new", "best", "ask", "show", "job"}
 
@@ -43,10 +45,34 @@ class HackerNewsClient:
         """
         if self._rate_limiter is not None:
             await self._rate_limiter.acquire()
-        response = await self._client.get(f"/v0/item/{item_id}.json")
-        response.raise_for_status()
-        data = response.json()
+        data = await self._request(f"/v0/item/{item_id}.json")
         return self._serialize_item(data) if data else None
+
+    @retry(
+        retry=retry_if_exception_type(httpx.TransportError | httpx.HTTPStatusError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(4),
+        reraise=True,
+    )
+    async def _request(self, path: str) -> dict | list | None:
+        """
+        Perform a single GET request against the HN API with retry
+        and exponential backoff on transient network errors or 5xx
+        responses. 4xx errors (bad request) are not retried — they
+        won't succeed on a second attempt.
+        """
+        try:
+            response = await self._client.get(path)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code < 500:
+                raise  # client error, retrying won't help
+            logger.warning(f"Transient error on {path}: {exc}. Retrying...")
+            raise
+        except httpx.TransportError as exc:
+            logger.warning(f"Network error on {path}: {exc}. Retrying...")
+            raise
 
     async def get_story_ids(self, feed: str = "top", limit: int = 100) -> list[int]:
         """
@@ -59,9 +85,7 @@ class HackerNewsClient:
         if feed not in VALID_FEEDS:
             raise ValueError(f"Unknown feed '{feed}', expected one of {VALID_FEEDS}")
 
-        response = await self._client.get(f"/v0/{feed}stories.json")
-        response.raise_for_status()
-        all_ids: list[int] = response.json()
+        all_ids: list[int] = await self._request(f"/v0/{feed}stories.json")
         return all_ids[:limit]
 
     async def get_stories(
@@ -103,9 +127,7 @@ class HackerNewsClient:
 
     async def get_user(self, username: str) -> dict | None:
         """Fetch basic profile info for a Hacker News user."""
-        response = await self._client.get(f"/v0/user/{username}.json")
-        response.raise_for_status()
-        data = response.json()
+        data = await self._request(f"/v0/user/{username}.json")
         if data is None:
             return None
         return {
