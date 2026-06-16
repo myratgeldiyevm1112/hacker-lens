@@ -17,8 +17,8 @@ dependencies = [
     "asyncpg>=0.29",
     "alembic>=1.13",
     "psycopg2-binary>=2.9",
+    "redis>=5.0",
 ]
-
 [project.optional-dependencies]
 dev = [
     "ruff>=0.4",

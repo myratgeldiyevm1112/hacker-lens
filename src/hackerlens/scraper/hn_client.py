@@ -3,12 +3,13 @@ Async client for the public Hacker News API (Firebase-based).
 Docs: https://github.com/HackerNews/API
 No authentication is required.
 """
-
+import asyncio
 from datetime import datetime
 
 import httpx
 
 from hackerlens.core.config import settings
+from hackerlens.scraper.rate_limiter import TokenBucketRateLimiter
 
 VALID_FEEDS = {"top", "new", "best", "ask", "show", "job"}
 
@@ -22,9 +23,14 @@ class HackerNewsClient:
     (makes it easy to mock in tests or swap data sources later).
     """
 
-    def __init__(self, base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str | None = None,
+        rate_limiter: TokenBucketRateLimiter | None = None,
+    ) -> None:
         self._base_url = base_url or settings.hn_base_url
         self._client = httpx.AsyncClient(base_url=self._base_url, timeout=10.0)
+        self._rate_limiter = rate_limiter
 
     async def close(self) -> None:
         """Release the underlying HTTP connection pool."""
@@ -35,6 +41,8 @@ class HackerNewsClient:
         Fetch a single item (story, comment, job, or poll) by id.
         Returns None if the item does not exist or was deleted.
         """
+        if self._rate_limiter is not None:
+            await self._rate_limiter.acquire()
         response = await self._client.get(f"/v0/item/{item_id}.json")
         response.raise_for_status()
         data = response.json()
@@ -56,20 +64,28 @@ class HackerNewsClient:
         all_ids: list[int] = response.json()
         return all_ids[:limit]
 
-    async def get_stories(self, feed: str = "top", limit: int = 100) -> list[dict]:
+    async def get_stories(
+        self, feed: str = "top", limit: int = 100, max_concurrency: int = 10
+    ) -> list[dict]:
         """
-        Fetch full story items for a given feed.
+        Fetch full story items for a given feed, concurrently.
 
-        Note: this fetches items one by one. Phase 2 will replace
-        this with concurrent fetching for better throughput.
+        Args:
+            feed: one of "top", "new", "best", "ask", "show", "job".
+            limit: maximum number of stories to return.
+            max_concurrency: maximum number of in-flight requests to
+                HN at once. Caps how aggressively we hit a free,
+                shared public API.
         """
         story_ids = await self.get_story_ids(feed, limit)
-        stories = []
-        for story_id in story_ids:
-            item = await self.get_item(story_id)
-            if item is not None and item["type"] == "story":
-                stories.append(item)
-        return stories
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async def fetch_with_limit(item_id: int) -> dict | None:
+            async with semaphore:
+                return await self.get_item(item_id)
+
+        items = await asyncio.gather(*(fetch_with_limit(sid) for sid in story_ids))
+        return [item for item in items if item is not None and item["type"] == "story"]
 
     async def get_comments(self, item_id: int, depth: int = 1) -> list[dict]:
         """
