@@ -20,6 +20,8 @@ dependencies = [
     "redis>=5.0",
     "tenacity>=8.2",
     "loguru>=0.7",
+    "vaderSentiment>=3.3",
+    "scikit-learn>=1.4",
 ]
 [project.optional-dependencies]
 dev = [

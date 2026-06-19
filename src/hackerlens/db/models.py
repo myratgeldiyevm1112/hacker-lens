@@ -84,3 +84,38 @@ class Item(Base):
     author: Mapped["Author | None"] = relationship(back_populates="items")
     parent: Mapped["Item | None"] = relationship(remote_side=[id], back_populates="children")
     children: Mapped[list["Item"]] = relationship(back_populates="parent")
+
+class Topic(Base):
+    """
+    A topic discovered by LDA over a batch of items. The label is a
+    short, human-readable summary built from the topic's top
+    keywords (e.g. "ai, model, training") since LDA itself doesn't
+    name topics — only ranks word probabilities per topic.
+    """
+
+    __tablename__ = "topics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    top_keywords: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    items: Mapped[list["ItemTopic"]] = relationship(back_populates="topic")
+
+
+class ItemTopic(Base):
+    """
+    Many-to-many link between items and topics, weighted by LDA's
+    per-document topic probability. An item can belong to multiple
+    topics with different weights, since LDA produces a probability
+    distribution rather than a single hard label.
+    """
+
+    __tablename__ = "item_topics"
+
+    item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("items.id"), primary_key=True)
+    topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("topics.id"), primary_key=True)
+    weight: Mapped[float] = mapped_column(Float, nullable=False)
+
+    item: Mapped["Item"] = relationship()
+    topic: Mapped["Topic"] = relationship(back_populates="items")
