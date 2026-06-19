@@ -31,7 +31,13 @@ class HackerNewsClient:
         rate_limiter: TokenBucketRateLimiter | None = None,
     ) -> None:
         self._base_url = base_url or settings.hn_base_url
-        self._client = httpx.AsyncClient(base_url=self._base_url, timeout=10.0)
+        self._client = httpx.AsyncClient(
+            base_url=self._base_url,
+            timeout=10.0,
+            proxy=settings.http_proxy_url or None,
+        )
+        # rate_limiter is optional so the client still works standalone
+        # (e.g. in quick manual tests) without requiring Redis to be up.
         self._rate_limiter = rate_limiter
 
     async def close(self) -> None:

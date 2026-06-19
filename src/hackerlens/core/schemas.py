@@ -24,6 +24,7 @@ class ItemCreate(BaseModel):
     created_utc: datetime | None = None
     deleted: bool = False
     dead: bool = False
+    sentiment_score: float | None = None
 
     model_config = ConfigDict(populate_by_name=True)
 

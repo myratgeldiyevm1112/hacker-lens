@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hackerlens.db.base import Base
@@ -68,6 +68,7 @@ class Item(Base):
 
     score: Mapped[int] = mapped_column(Integer, default=0)
     num_comments: Mapped[int] = mapped_column(Integer, default=0)
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     parent_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("items.id"), nullable=True

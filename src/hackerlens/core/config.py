@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     # Hacker News API (public, no authentication required)
     hn_base_url: str = "https://hacker-news.firebaseio.com"
 
+    # Optional proxy for outbound HTTP requests (e.g. local SOCKS proxy)
+    http_proxy_url: str | None = None
+
     # Database (used starting Phase 1.3)
     database_url: str = ""
 

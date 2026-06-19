@@ -17,6 +17,7 @@ from hackerlens.core.logging import logger
 from hackerlens.core.schemas import AuthorCreate, ItemCreate
 from hackerlens.db.models import Author, Item
 from hackerlens.scraper.hn_client import HackerNewsClient
+from hackerlens.nlp.sentiment import analyze_sentiment
 
 
 async def _upsert_item(session: AsyncSession, validated: ItemCreate) -> None:
@@ -28,6 +29,7 @@ async def _upsert_item(session: AsyncSession, validated: ItemCreate) -> None:
         set_={
             "score": stmt.excluded.score,
             "num_comments": stmt.excluded.num_comments,
+            "sentiment_score": stmt.excluded.sentiment_score,
             "deleted": stmt.excluded.deleted,
             "dead": stmt.excluded.dead,
         },
@@ -78,6 +80,10 @@ async def run_pipeline(
         except Exception as exc:
             logger.warning(f"Skipping invalid item {raw.get('id')}: {exc}")
             continue
+            
+        text_for_sentiment = validated.title or validated.text
+        sentiment_score = analyze_sentiment(text_for_sentiment)
+        validated = validated.model_copy(update={"sentiment_score": sentiment_score})
 
         if validated.by is not None:
             await _ensure_author(session, client, validated.by)
